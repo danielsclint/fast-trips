@@ -1225,7 +1225,7 @@ class Assignment:
                                     right_index  = True,
                                     how          ='left')
         veh_loaded_df.rename(columns={Passenger.TRIP_LIST_COLUMN_TRIP_LIST_ID_NUM:Trip.SIM_COL_VEH_ALIGHTS}, inplace=True)
-        veh_loaded_df.fillna(value=0, inplace=True)
+        veh_loaded_df.fillna(value={Trip.SIM_COL_VEH_BOARDS:0, Trip.SIM_COL_VEH_ALIGHTS:0}, inplace=True)
         assert(len(veh_loaded_df)==veh_trips_df_len)
 
         # these are ints, not floats

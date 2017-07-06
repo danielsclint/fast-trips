@@ -1,4 +1,4 @@
-__copyright__ = "Copyright 2015 Contributing Entities"
+__copyright__ = "Copyright 2015-2017 Contributing Entities"
 __license__   = """
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -89,6 +89,16 @@ class Trip:
     VEHICLES_COLUMN_WHEELCHAIR_CAPACITY     = 'wheelchair_capacity'
     #: fasttrips Vehicles column name: Bicycle Capacity
     VEHICLES_COLUMN_BICYCLE_CAPACITY        = 'bicycle_capacity'
+    # fasttrips Vehicles column name: Boarding door. One of [blank, 'front' or 'all']. TQSM parameter. string.
+    VEHICLES_COLUMN_BOARDING_DOOR           = 'boarding_door'
+    # fasttrips Vehicles column name: Payment method accepted. See GTFS-PLUS spec for valid values. TQSM parameter. string.
+    VEHICLES_COLUMN_FARE_PAYMENT_METHOD     = 'fare_payment_method'
+    # fasttrips Vehicles column name: User defined fare payment. TQSM parameter. float.
+    VEHICLES_COLUMN_USER_DEFINED_FARE       = 'user_defined_fare_payment'
+    # fasttrips Vehicles column name: Boarding height. One of ['level','stairs','steep_stairs']. TQSM parameter. string.
+    VEHICLES_COLUMN_BOARDING_HEIGHT         = 'boarding_height'
+    # fasttrips Vehicles column name: Door time, in seconds, for opening or closing. Usually between 2 and 5. TQSM parameter. integer.
+    VEHICLES_COLUMN_DOOR_TIME               = 'door_time'
     #: fasttrips Vehicles column name: Acceleration (feet per (second^2))  float.
     VEHICLES_COLUMN_ACCELERATION            = 'acceleration'
     #: fasttrips Vehicles column name: Decelration (feet per (second^2))  float.
@@ -128,21 +138,24 @@ class Trip:
     STOPTIMES_COLUMN_ARRIVAL_TIME_MIN       = 'arrival_time_min'
     #: gtfs Stop times column name: Arrival time.  This is a DateTime.
     STOPTIMES_COLUMN_ARRIVAL_TIME           = 'arrival_time'
-    #: Stop times column name: Departure time. This is a float, minutes after midnight.
+    #: gtfs Stop times column name: Departure time. This is a float, minutes after midnight.
     STOPTIMES_COLUMN_DEPARTURE_TIME_MIN     = 'departure_time_min'
     #: gtfs Stop times column name: Departure time. This is a DateTime.
     STOPTIMES_COLUMN_DEPARTURE_TIME         = 'departure_time'
 
-    #: gtfs Stop times stop times column name: Stop Headsign
+    #: gtfs Stop times column name: Stop Headsign
     STOPTIMES_COLUMN_HEADSIGN               = 'stop_headsign'
-    #: gtfs Stop times stop times column name: Pickup Type
+    #: gtfs Stop times column name: Pickup Type
     STOPTIMES_COLUMN_PICKUP_TYPE            = 'pickup_type'
-    #: gtfs Stop times stop times column name: Drop Off Type
+    #: gtfs Stop times column name: Drop Off Type
     STOPTIMES_COLUMN_DROP_OFF_TYPE          = 'drop_off_type'
-    #: gtfs Stop times stop times column name: Shape Distance Traveled
+    #: gtfs Stop times column name: Shape Distance Traveled
     STOPTIMES_COLUMN_SHAPE_DIST_TRAVELED    = 'shape_dist_traveled'
-    #: gtfs Stop times stop times column name: Time Point
+    #: gtfs Stop times column name: Time Point
     STOPTIMES_COLUMN_TIMEPOINT              = 'timepoint'
+
+    #: fasttrips Stop times column name: Percent using farebox. TCQSM parameter. Float.
+    STOPTIMES_COLUMN_PERCENT_USING_FAREBOX  = 'percent_using_farebox'
 
     # ========== Added by fasttrips =======================================================
     #: fasttrips Trips column name: Trip Numerical Identifier. Int.
@@ -209,7 +222,10 @@ class Trip:
         self.output_dir = output_dir
 
         # Read vehicles first
-        self.vehicles_df = pandas.read_csv(os.path.join(input_dir, Trip.INPUT_VEHICLES_FILE), skipinitialspace=True)
+        self.vehicles_df = pandas.read_csv(os.path.join(input_dir, Trip.INPUT_VEHICLES_FILE),
+                                           skipinitialspace=True,
+                                           dtype={Trip.VEHICLES_COLUMN_DWELL_FORMULA      :object,
+                                                  Trip.VEHICLES_COLUMN_FARE_PAYMENT_METHOD:object})
         # verify the required columns are present
         vehicle_ft_cols = list(self.vehicles_df.columns.values)
         assert(Trip.VEHICLES_COLUMN_VEHICLE_NAME    in vehicle_ft_cols)
@@ -231,6 +247,12 @@ class Trip:
                 FastTripsLogger.fatal(error_str)
 
                 raise NetworkInputError(Trip.INPUT_VEHICLES_FILE, error_str)
+
+        # dwell formula column is optional -- if it's not specified, assume default of blank - or don't calculate dwell
+        if Trip.VEHICLES_COLUMN_DWELL_FORMULA not in vehicle_ft_cols:
+            self.vehicles_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA] = ""
+        self.vehicles_df.fillna(value={Trip.VEHICLES_COLUMN_DWELL_FORMULA:""}, inplace=True)
+        # further validate vehicle column values?
 
         # convert mph to fps for maximum speed
         if Trip.VEHICLES_COLUMN_MAXIMUM_SPEED in vehicle_ft_cols:
@@ -385,7 +407,7 @@ class Trip:
 
             # Join to the trips dataframe
             if len(stop_times_ft_cols) > 2:
-                self.stop_times_df = pandas.merge(left=stop_times_df, right=stop_times_ft_df,
+                self.stop_times_df = pandas.merge(left=self.stop_times_df, right=stop_times_ft_df,
                                                   how='left',
                                                   on=[Trip.STOPTIMES_COLUMN_TRIP_ID,
                                                       Trip.STOPTIMES_COLUMN_STOP_ID])
@@ -499,6 +521,8 @@ class Trip:
         # this will be NaT for last stops
         self.stop_times_df[Trip.STOPTIMES_COLUMN_ORIGINAL_TRAVEL_TIME] = \
             self.stop_times_df["next_stop_arrival"] - self.stop_times_df[Trip.STOPTIMES_COLUMN_DEPARTURE_TIME]
+        # so fill those
+        self.stop_times_df.fillna(value={Trip.STOPTIMES_COLUMN_ORIGINAL_TRAVEL_TIME:0}, inplace=True)
         # drop the extra column
         self.stop_times_df.drop(["next_stop_arrival"], axis=1, inplace=True)
 
@@ -608,7 +632,8 @@ class Trip:
         df = pandas.merge(left = self.stop_times_df,
                           right= self.trips_df,
                           how  = 'left',
-                          on   =[Trip.TRIPS_COLUMN_TRIP_ID, Trip.TRIPS_COLUMN_TRIP_ID_NUM])
+                          on   =[Trip.TRIPS_COLUMN_TRIP_ID, Trip.TRIPS_COLUMN_TRIP_ID_NUM],
+                          suffixes=[" st"," route"])
         assert(len(self.stop_times_df) == len(df))
 
         # blank boards, alights and onboard
@@ -625,6 +650,24 @@ class Trip:
         df[Trip.SIM_COL_VEH_MSA_FRICTION] = 0.0
         df[Trip.SIM_COL_VEH_MSA_STANDEES] = 0.0
         df[Trip.SIM_COL_VEH_MSA_OVERCAP ] =-1.0 # assume there's room
+
+        # if percent_using_farebox is specified at both the routes level (from trips_df) and stop_times level (from stop_times_df)
+        # then the stop_times one overrides trips version
+        if ((Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX in self.stop_times_df.columns) and \
+            (Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX in self.trips_df.columns)):
+            # start with route version
+            df[Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX] = df["%s route" % Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX]
+            # override with stop times version if not null
+            df.loc[ pandas.notnull(df["%s st" % Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX]),
+                    Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX] = df["%s st" % Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX]
+            # delete old columns
+            df.drop(["%s route" % Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX,
+                     "%s st"    % Trip.STOPTIMES_COLUMN_PERCENT_USING_FAREBOX], axis=1, inplace=True)
+
+        FastTripsLogger.debug("get_full_trips() fare_payment_method for trips_df\n%s\nfor df\n%s" % (str(self.trips_df["fare_payment_method"].value_counts()),
+                              str(df["fare_payment_method"].value_counts())))
+
+        # FastTripsLogger.debug("Trip.get_full_trips head=\n%s" % str(df.head()))
         return df
 
     def write_trips_for_extension(self):
@@ -699,6 +742,7 @@ class Trip:
         """
         Updates trip times for stops with boards and/or alights.
 
+        If vehicle seated capacity is specified, updates standees.
         If vehicle max_speed and deceleration rate specified, for non first/last stop, adds lost time due to stopping.
         If vehicle max_speed and acceleration rate specified, for non first/last stop, adds lost time due to stopping.
         If dwell time formula specified, adds dwell time at stop.
@@ -721,6 +765,7 @@ class Trip:
         # FastTripsLogger.debug("trips_df.dtypes=\n%s\n" % str(trips_df.dtypes))
         trip_cols = list(trips_df.columns.values)
 
+        ########## set friction for when it's in the dwell formula  ##########
         # Default to 0
         trips_df[Trip.SIM_COL_VEH_FRICTION    ] = 0.0
         trips_df[Trip.SIM_COL_VEH_MSA_FRICTION] = 0.0
@@ -749,37 +794,43 @@ class Trip:
 
         # Update the dwell time
         if Trip.VEHICLES_COLUMN_DWELL_FORMULA in trip_cols:
-            all_dwell_df   = None
-            all_dwell_init = False
-            # grouppy unique dwell time forumulas
-            dwell_groups = trips_df.groupby(Trip.VEHICLES_COLUMN_DWELL_FORMULA)
-            for dwell_formula, dwell_group in dwell_groups:
 
-                dwell_df = dwell_group.copy()
-                FastTripsLogger.debug("dwell_formula %s has %d rows" % (str(dwell_formula), len(dwell_df)))
-                if isinstance(dwell_formula,str):
+            # lower case it
+            trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA] = trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA].str.lower()
+
+            # groupby unique dwell time forumulas
+            dwell_formulas = trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA].value_counts()
+            for dwell_formula,dwell_formula_count in dwell_formulas.iteritems():
+                FastTripsLogger.debug("dwell_formula [%s] has [%d] rows" % (dwell_formula, dwell_formula_count))
+
+                # no dwell update
+                if dwell_formula in ["","0","static"]:
+                    trips_df.loc[trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA]==dwell_formula, Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC] = 0
+
+                # use tcqsm
+                elif dwell_formula == "tcqsm":
+                    from .TCQSM import TCQSM
+
+                    trips_df = TCQSM.calculate_tcqsm_dwell(trips_df)
+                    trips_df.loc[trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA]==dwell_formula, Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC] = trips_df[TCQSM.TCQSM_COL_DWELL_TIME_SEC]
+                    # FastTripsLogger.debug("Trip.update_trip_times() Setting tcqsm dwell:\n%s" % str(trips_df.loc[trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA]==dwell_formula].head(20)))
+
+                else:
+                    dwell_formula_use = dwell_formula
+
                     if MSA_RESULTS:
                         # replace [boards], [alights], etc with trip_df['msa_boards'], trip_df['msa_alights'], etc
-                        dwell_formula = dwell_formula.replace("[","dwell_df['msa_")
+                        dwell_formula_use = dwell_formula.replace("[","trips_df['msa_")
                     else:
                         # replace [boards], [alights], etc with trip_df['boards'], trip_df['alights'], etc
-                        dwell_formula = dwell_formula.replace("[","dwell_df['")
-                    dwell_formula = dwell_formula.replace("]","']")
+                        dwell_formula_use = dwell_formula.replace("[","trips_df['")
+                    dwell_formula_use = dwell_formula_use.replace("]","']")
 
                     # eval it
-                    dwell_df[Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC] = eval(dwell_formula)
-                else:
-                    dwell_df[Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC] = 0.0
+                    trips_df.loc[trips_df[Trip.VEHICLES_COLUMN_DWELL_FORMULA]==dwell_formula, Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC] = eval(dwell_formula_use)
 
-                # FastTripsLogger.debug("\n%s" % dwell_df[["boards","alights","dwell_formula","dwell_time_sec"]].to_string())
-                if all_dwell_init:
-                    all_dwell_df = pandas.concat([all_dwell_df, dwell_df], axis=0)
-                else:
-                    all_dwell_df = dwell_df
-                    all_dwell_init = True
-
-            # use the new one
-            trips_df = all_dwell_df
+            # do we have any nulls?
+            # FastTripsLogger.debug("Null dwell: \n%s" % str(trips_df[pandas.isnull(trips_df[Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC])]))
 
             # keep the dwell time
             trips_df[Trip.STOPTIMES_COLUMN_DWELL_TIME] = trips_df[Trip.STOPTIMES_COLUMN_DWELL_TIME_SEC].map(lambda x: datetime.timedelta(seconds=x))
@@ -825,6 +876,8 @@ class Trip:
         trips_df.loc[ pandas.notnull(trips_df["accel_secs"]), Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC] = trips_df[Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC] + trips_df["accel_secs"]
         trips_df.loc[ pandas.notnull(trips_df["decel_secs"]), Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC] = trips_df[Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC] + trips_df["decel_secs"]
 
+        FastTripsLogger.debug("trips_df head:\n%s" % str(trips_df.head(50)))
+        FastTripsLogger.debug("null travel times:\n%s" % str(trips_df.loc[pandas.isnull( trips_df[Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC] )]))
         trips_df[Trip.STOPTIMES_COLUMN_TRAVEL_TIME    ] = trips_df[Trip.STOPTIMES_COLUMN_TRAVEL_TIME_SEC].map(lambda x: datetime.timedelta(seconds=x))
 
         # put travel time + dwell together because that's the full time for a link (stop arrival time to next stop arrival time)
