@@ -251,7 +251,7 @@ class TCQSM:
             'magstripe_card'      : 5.00,
             'smart_card'          : 2.75,
             }, orient='index').rename(columns={0:"_avg_board_time"})
-        print(AVG_BOARD_TIME_BY_FARE_METHOD)
+        # print(AVG_BOARD_TIME_BY_FARE_METHOD)
 
         # create column, avg_board_time for this channel, by merging on payment_fare_method
         trips_df = pandas.merge(left       =trips_df,
