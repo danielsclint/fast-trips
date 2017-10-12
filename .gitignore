@@ -4,8 +4,8 @@
 *.so
 *.bak
 
-Examples/*/output
-Examples/*/output_bak
+**/Examples/**/output
+**/Examples/**/output_bak
 Examples/simplest
 create_tableau_path_map/*
 
@@ -15,3 +15,6 @@ build/
 # test
 sfcta/
 psrc/
+
+#PyCharm IDE Files
+.idea/
