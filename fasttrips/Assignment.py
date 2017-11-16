@@ -620,19 +620,17 @@ class Assignment:
 
         for iteration in range(1,Assignment.MAX_ITERATIONS+1):
 
-            #: todo make max_pathfinding_iterations configurable?
-            for pathfinding_iteration in range(1, 11):
+                #: todo make max_pathfinding_iterations configurable?
+                #for pathfinding_iteration in range(1, 11):
+                pathfinding_iteration = 1
 
                 # First pathfinding_iteration, find paths for everyone
-                if pathfinding_iteration == 1:
-                    Assignment.PATHFINDING_EVERYONE = True
-                # Subsequent: just find paths for those without paths
-                else:
-                    Assignment.PATHFINDING_EVERYONE = False
+                Assignment.PATHFINDING_EVERYONE = pathfinding_iteration == 1
+
 
                 FastTripsLogger.info("***************************** ITERATION %d PATHFINDING ITERATION %d **************************************" % (iteration, pathfinding_iteration))
 
-                if (Assignment.PATHFINDING_TYPE == Assignment.PATHFINDING_TYPE_READ_FILE) and (iteration == 1) and (pathfinding_iteration == 1):
+                if (Assignment.PATHFINDING_TYPE == Assignment.PATHFINDING_TYPE_READ_FILE) and (iteration == 1):
                     FastTripsLogger.info("Reading paths from file")
                     FT.performance.record_step_start(iteration, pathfinding_iteration, -1, "pathreading")
                     (new_pathset_paths_df, new_pathset_links_df) = FT.passengers.read_passenger_pathsets(output_dir, FT.stops, FT.routes.modes_df, include_asgn=False)
@@ -693,10 +691,11 @@ class Assignment:
                 # capacity gap stuff
                 num_paths_found = Assignment.number_of_pathsets(pathset_paths_df)
                 num_bumped_passengers = num_paths_found - num_passengers_arrived
-                if num_paths_found > 0:
-                    capacity_gap = 100.0*num_bumped_passengers/num_paths_found
-                else:
-                    capacity_gap = 100
+                #if num_paths_found > 0:
+                #    capacity_gap = 100.0*num_bumped_passengers/num_paths_found
+                #else:
+                #    capacity_gap = 100
+                capacity_gap = Assignment.calculate_convergence_gap(pathset_paths_df)
 
                 FastTripsLogger.info("")
                 FastTripsLogger.info("  Length of trip list:       %10d" % len(FT.passengers.trip_list_df))
@@ -708,12 +707,12 @@ class Assignment:
                 FT.performance.record_step_end(iteration, pathfinding_iteration, -1)
 
                 # if no new paths found, pathfinding_iteration loop is done
-                if num_new_paths_found == 0:
-                    break
+                #if num_new_paths_found == 0:
+                #    break
 
-            # end condition for iterations loop
-            if False and capacity_gap < 0.001:
-                break
+                # end condition for iterations loop
+                if False and capacity_gap < 0.001:
+                    break
             
             # end for loop
         
@@ -722,7 +721,21 @@ class Assignment:
                 "passengers_arrived": num_passengers_arrived,
                 "passengers_missed": num_bumped_passengers,
                 "passengers_demand": len(FT.passengers.trip_list_df) }
-        
+
+    @staticmethod
+    def calculate_convergence_gap(pathset_paths_df):
+        min_sim_cost = 'min_{}'.format(Assignment.SIM_COL_PAX_COST)
+
+        min_cost = pathset_paths_df.groupby(
+                        by=[Passenger.PERSONS_COLUMN_PERSON_ID,Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID]
+                    )[[Assignment.SIM_COL_PAX_COST]].min().rename(columns={Assignment.SIM_COL_PAX_COST: min_sim_cost})
+        pathsets = pandas.merge(pathset_paths_df,
+                                min_cost.reset_index(),
+                                on=[Passenger.PERSONS_COLUMN_PERSON_ID,Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID])
+        pathsets = pathsets[~pathsets.chosen.isin(['rejected', 'unchosen'])]
+        pathsets['diff'] = pathsets.sim_cost - pathsets.min_sim_cost
+        return pathsets['diff'].sum() / pathsets[min_sim_cost].sum()
+
     @staticmethod
     def filter_trip_list_to_not_arrived(trip_list_df, pathset_paths_df):
         """
