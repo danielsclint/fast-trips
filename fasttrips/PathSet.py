@@ -827,7 +827,11 @@ class PathSet:
             # rename new columns so it's clear it's for walk|bike|drive
             for colname in list(link_df.select_dtypes(include=['float64','int64']).columns.values):
                 # don't worry about join columns
-                if colname in ["A_id_num", PathSet.WEIGHTS_COLUMN_SUPPLY_MODE_NUM, "B_id_num"]: continue
+                if colname in ["A_id_num", PathSet.WEIGHTS_COLUMN_SUPPLY_MODE_NUM, "B_id_num",
+                               'seated_capacity', 'standing_capacity',
+                               'capacity',
+                               'boards', 'alights', 'onboard'
+                               ]: continue
 
                 # rename the rest
                 new_colname = "%s %s" % (colname, accegr_type)
@@ -911,8 +915,14 @@ class PathSet:
         cost_trip_df.loc[(cost_trip_df[PathSet.WEIGHTS_COLUMN_WEIGHT_NAME] == "in_vehicle_time_min")& pandas.isnull(cost_trip_df[Assignment.SIM_COL_PAX_BOARD_TIME]), "var_value"] = \
             (cost_trip_df[Assignment.SIM_COL_PAX_B_TIME] - cost_trip_df[Assignment.SIM_COL_PAX_A_TIME])/numpy.timedelta64(1,'m')
 
+        cost_trip_df.loc[(cost_trip_df[PathSet.WEIGHTS_COLUMN_WEIGHT_NAME] == "capacity_friction") & pandas.notnull(cost_trip_df[Assignment.SIM_COL_PAX_BOARD_TIME]), "var_value"] = \
+            cost_trip_df[Assignment.SIM_COL_PAX_CAPACITY_FRAC] * (cost_trip_df[Assignment.SIM_COL_PAX_B_TIME] - cost_trip_df[Assignment.SIM_COL_PAX_BOARD_TIME]) / numpy.timedelta64(1, 'm')
+        cost_trip_df.loc[(cost_trip_df[PathSet.WEIGHTS_COLUMN_WEIGHT_NAME] == "capacity_friction") & pandas.isnull(cost_trip_df[Assignment.SIM_COL_PAX_BOARD_TIME]), "var_value"] = \
+            cost_trip_df[Assignment.SIM_COL_PAX_CAPACITY_FRAC] * (cost_trip_df[Assignment.SIM_COL_PAX_B_TIME] - cost_trip_df[Assignment.SIM_COL_PAX_A_TIME]) / numpy.timedelta64(1, 'm')
+
         # if in vehicle time is less than 0 then off by 1 day error
         cost_trip_df.loc[(cost_trip_df[PathSet.WEIGHTS_COLUMN_WEIGHT_NAME] == "in_vehicle_time_min")&(cost_trip_df["var_value"]<0), "var_value"] = cost_trip_df["var_value"] + (24*60)
+        cost_trip_df.loc[(cost_trip_df[PathSet.WEIGHTS_COLUMN_WEIGHT_NAME] == "capacity_friction")&(cost_trip_df["var_value"] < 0), "var_value"] = cost_trip_df["var_value"] + (24*60)
 
         # if there's a board time, wait time = board_time - A time
         #               otherwise, wait time = 0 (for when we split transit links)

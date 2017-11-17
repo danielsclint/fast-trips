@@ -206,6 +206,8 @@ class Assignment:
 
     SIM_COL_PAX_OVERCAP             = Trip.SIM_COL_VEH_OVERCAP      #: 
     SIM_COL_PAX_OVERCAP_FRAC        = Trip.SIM_COL_VEH_OVERCAP_FRAC #: If board at an overcap stop, fraction of boards that are overcap
+    SIM_COL_PAX_CAPACITY_FRAC       = 'capacity_frac'    #: percentage of total capacity used on vehicle
+    SIM_COL_PAX_STAND_CAPACITY_FRAC = 'standee_frac'     #: percentage of standee capacity used on vehicle
     SIM_COL_PAX_BUMP_ITER           = 'bump_iter'
     SIM_COL_PAX_BOARD_STATE         = 'board_state'      #: NaN if not relevent, 1 if lucky enough to board at an at- or over-capacity stop, 0 if bumped.  Set by :py:meth:`Assignment.flag_bump_overcap_passengers`
     SIM_COL_PAX_DISTANCE            = "distance"         #: Link distance
@@ -1125,6 +1127,9 @@ class Assignment:
                                    Assignment.SIM_COL_PAX_OVERCAP], axis=1, inplace=True)
         if Assignment.SIM_COL_PAX_OVERCAP_FRAC in list(pathset_links_df.columns.values):
             pathset_links_df.drop([Assignment.SIM_COL_PAX_OVERCAP_FRAC], axis=1, inplace=True)
+        if Assignment.SIM_COL_PAX_CAPACITY_FRAC in pathset_links_df:
+            pathset_links_df.drop([Assignment.SIM_COL_PAX_CAPACITY_FRAC, Assignment.SIM_COL_PAX_STAND_CAPACITY_FRAC],
+                                  axis=1, inplace=True)
 
         # FastTripsLogger.debug("pathset_links_df:\n%s\n" % pathset_links_df.head().to_string())
         if False: FastTripsLogger.debug("veh_trips_df:\n%s\n" % veh_trips_df.head().to_string())
@@ -1135,6 +1140,29 @@ class Assignment:
                          Trip.STOPTIMES_COLUMN_DEPARTURE_TIME,
                          Trip.SIM_COL_VEH_OVERCAP,                # TODO: what about msa_overcap?
                          Trip.SIM_COL_VEH_OVERCAP_FRAC]
+
+        capacity_df = veh_trips_df[[Trip.STOPTIMES_COLUMN_TRIP_ID,
+                         Trip.STOPTIMES_COLUMN_STOP_ID,
+                         Trip.STOPTIMES_COLUMN_STOP_SEQUENCE,
+                         Trip.SIM_COL_VEH_BOARDS,
+                         Trip.SIM_COL_VEH_ALIGHTS,
+                         Trip.SIM_COL_VEH_ONBOARD,
+                         Trip.VEHICLES_COLUMN_TOTAL_CAPACITY,
+                         Trip.VEHICLES_COLUMN_SEATED_CAPACITY,
+                         Trip.VEHICLES_COLUMN_STANDING_CAPACITY]].copy()
+
+        capacity_df['arrival_riders'] = \
+            capacity_df[Trip.SIM_COL_VEH_ONBOARD] - capacity_df[Trip.SIM_COL_VEH_BOARDS] + capacity_df[Trip.SIM_COL_VEH_ALIGHTS]
+        capacity_df[Assignment.SIM_COL_PAX_CAPACITY_FRAC] = \
+            capacity_df['arrival_riders'] / capacity_df[Trip.VEHICLES_COLUMN_TOTAL_CAPACITY]
+
+        capacity_df.loc[capacity_df[Trip.VEHICLES_COLUMN_STANDING_CAPACITY] > 0, Assignment.SIM_COL_PAX_STAND_CAPACITY_FRAC] = \
+            capacity_df.loc[capacity_df[Trip.VEHICLES_COLUMN_STANDING_CAPACITY] > 0, ].apply(
+                lambda x: (x['arrival_riders'] - x[Trip.VEHICLES_COLUMN_SEATED_CAPACITY]) / x[Trip.VEHICLES_COLUMN_STANDING_CAPACITY],
+                axis=1)
+
+        capacity_df.loc[capacity_df[Assignment.SIM_COL_PAX_STAND_CAPACITY_FRAC] < 0,
+                        Assignment.SIM_COL_PAX_STAND_CAPACITY_FRAC] = 0
 
         # this one may not be here -- it's only present during capacity stuff
         if Trip.SIM_COL_VEH_OVERCAP_FRAC not in list(veh_trips_df.columns.values):
@@ -1166,11 +1194,26 @@ class Assignment:
             Trip.STOPTIMES_COLUMN_ARRIVAL_TIME  :Assignment.SIM_COL_PAX_ALIGHT_TIME,  # transit vehicle arrive time (at B) = alight time for pax
         }, inplace=True)
 
+        pathset_links_df = pandas.merge(
+            left=pathset_links_df,
+            right=capacity_df[[Trip.STOPTIMES_COLUMN_TRIP_ID,
+                      Trip.STOPTIMES_COLUMN_STOP_ID,
+                      Trip.STOPTIMES_COLUMN_STOP_SEQUENCE,
+                       Assignment.SIM_COL_PAX_CAPACITY_FRAC, Assignment.SIM_COL_PAX_STAND_CAPACITY_FRAC]],
+            left_on=[Trip.STOPTIMES_COLUMN_TRIP_ID, 'A_id', 'A_seq'],
+            right_on=[Trip.STOPTIMES_COLUMN_TRIP_ID,
+                      Trip.STOPTIMES_COLUMN_STOP_ID,
+                      Trip.STOPTIMES_COLUMN_STOP_SEQUENCE],
+            how='left')
+
         # redundant with A_id, B_id, A_seq, B_seq, B_time is just alight time
         pathset_links_df.drop(['%s_A' % Trip.STOPTIMES_COLUMN_STOP_ID,
                                '%s_B' % Trip.STOPTIMES_COLUMN_STOP_ID,
                                '%s_A' % Trip.STOPTIMES_COLUMN_STOP_SEQUENCE,
-                               '%s_B' % Trip.STOPTIMES_COLUMN_STOP_SEQUENCE], axis=1, inplace=True)
+                               '%s_B' % Trip.STOPTIMES_COLUMN_STOP_SEQUENCE,
+                               Trip.STOPTIMES_COLUMN_STOP_ID,
+                               Trip.STOPTIMES_COLUMN_STOP_SEQUENCE
+                               ], axis=1, inplace=True)
 
         if False and len(Assignment.TRACE_IDS) > 0:
             FastTripsLogger.debug("find_passenger_vehicle_times(): output pathset_links_df len=%d\n%s" % \
