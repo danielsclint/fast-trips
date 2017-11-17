@@ -620,6 +620,11 @@ class Assignment:
         # write 0-iter vehicle trips
         Assignment.write_vehicle_trips(output_dir, 0, 0, 0, veh_trips_df)
 
+        chosen_count_df = pandas.DataFrame(data=[], index=[], columns=[
+            Passenger.PERSONS_COLUMN_PERSON_ID,
+            Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID,
+            Passenger.PF_COL_DESCRIPTION, 'chosen_count'])
+
         for iteration in range(1,Assignment.MAX_ITERATIONS+1):
 
                 #: todo make max_pathfinding_iterations configurable?
@@ -628,7 +633,6 @@ class Assignment:
 
                 # First pathfinding_iteration, find paths for everyone
                 Assignment.PATHFINDING_EVERYONE = pathfinding_iteration == 1
-
 
                 FastTripsLogger.info("***************************** ITERATION %d PATHFINDING ITERATION %d **************************************" % (iteration, pathfinding_iteration))
 
@@ -664,6 +668,19 @@ class Assignment:
                 else:
                     (pathset_paths_df, pathset_links_df) = Assignment.merge_pathsets(FT.passengers.pathfind_trip_list_df, pathset_paths_df, pathset_links_df, new_pathset_paths_df, new_pathset_links_df)
 
+                if 'chosen_count' in pathset_paths_df:
+                    pathset_paths_df = pathset_paths_df.drop('chosen_count', 1)
+
+                pathset_paths_df = pandas.merge(pathset_paths_df, chosen_count_df, how='left',
+                             on=[Passenger.PERSONS_COLUMN_PERSON_ID, Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID,
+                               Passenger.PF_COL_DESCRIPTION]
+                )
+
+                if 'chosen_count' in pathset_paths_df:
+                    pathset_paths_df.chosen_count.fillna(0, inplace=True)
+                else:
+                    pathset_paths_df['chosen_count'] = 0
+
                 # if we have new paths, simulate them
                 if num_new_paths_found > 0:
 
@@ -683,6 +700,8 @@ class Assignment:
 
                 # Set new schedule
                 FT.trips.stop_times_df = veh_trips_df
+
+                chosen_count_df = Assignment.update_chosen_count(pathset_paths_df, chosen_count_df)
 
                 # todo: pass back correct simulation iteration?
                 Assignment.write_vehicle_trips(output_dir, iteration, pathfinding_iteration, "final", veh_trips_df)
@@ -737,6 +756,23 @@ class Assignment:
         pathsets = pathsets[~pathsets.chosen.isin(['rejected', 'unchosen'])]
         pathsets['diff'] = pathsets.sim_cost - pathsets.min_sim_cost
         return pathsets['diff'].sum() / pathsets[min_sim_cost].sum()
+
+    @staticmethod
+    def update_chosen_count(pathset_paths_df, chosen_count_df):
+        tmp = Passenger.get_chosen_links(pathset_paths_df)[[
+            Passenger.PERSONS_COLUMN_PERSON_ID, Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID,
+            Passenger.PF_COL_DESCRIPTION]]
+        tmp['chosen_count_tmp'] = 1
+
+        tmp = pandas.merge(chosen_count_df, tmp, how='outer',
+                           on=[Passenger.PERSONS_COLUMN_PERSON_ID, Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID,
+                               Passenger.PF_COL_DESCRIPTION])
+        tmp.fillna(0, inplace=True)
+        tmp.chosen_count_tmp = tmp.chosen_count_tmp.astype(numpy.int64)
+        tmp.chosen_count = tmp.chosen_count + tmp.chosen_count_tmp
+        tmp = tmp.drop('chosen_count_tmp', 1)
+        return tmp[tmp.chosen_count > 0].copy()
+
 
     @staticmethod
     def filter_trip_list_to_not_arrived(trip_list_df, pathset_paths_df):
