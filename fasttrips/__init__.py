@@ -22,6 +22,7 @@ from .PathSet     import PathSet
 from .Performance import Performance
 from .Route       import Route
 from .Run         import run_fasttrips, main
+from .Simulator   import Simulator
 from .Stop        import Stop
 from .TAZ         import TAZ
 from .Transfer    import Transfer
