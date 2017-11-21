@@ -632,7 +632,7 @@ class Assignment:
                 pathfinding_iteration = 1
 
                 # First pathfinding_iteration, find paths for everyone
-                Assignment.PATHFINDING_EVERYONE = pathfinding_iteration == 1
+                Assignment.PATHFINDING_EVERYONE = True
 
                 FastTripsLogger.info("***************************** ITERATION %d PATHFINDING ITERATION %d **************************************" % (iteration, pathfinding_iteration))
 
@@ -708,6 +708,10 @@ class Assignment:
 
                 if Assignment.OUTPUT_PASSENGER_TRAJECTORIES:
                     PathSet.write_path_times(Passenger.get_chosen_links(pathset_links_df), output_dir)
+
+                #if True:
+                #    pathset_paths_df.to_csv('{}/pathset_paths_{}.csv'.format(output_dir, iteration), index=False)
+                #    pathset_links_df.to_csv('{}/pathset_links_{}.csv'.format(output_dir, iteration), index=False)
 
                 # capacity gap stuff
                 num_paths_found = Assignment.number_of_pathsets(pathset_paths_df)
@@ -1364,17 +1368,7 @@ class Assignment:
                                    Assignment.SIM_COL_PAX_WAIT_TIME,
                                    Assignment.SIM_COL_MISSED_XFER], axis=1, inplace=True)
 
-        # Set alight delay (min)
-        FastTripsLogger.debug("flag_missed_transfers() pathset_links_df (%d):\n%s" % (len(pathset_links_df), pathset_links_df.head().to_string()))
-        pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = 0.0
-        pathset_links_df.loc[pandas.notnull(pathset_links_df[Trip.TRIPS_COLUMN_TRIP_ID]), Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = \
-            ((pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME]-pathset_links_df[Passenger.PF_COL_PAX_B_TIME])/numpy.timedelta64(1, 'm'))
-
-        #: todo: is there a more elegant way to take care of this?  some trips have times after midnight so they're the next day
-        pathset_links_df.loc[pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN]>22*60, Assignment.SIM_COL_PAX_BOARD_TIME ] = pathset_links_df[Assignment.SIM_COL_PAX_BOARD_TIME] - numpy.timedelta64(24, 'h')
-        pathset_links_df.loc[pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN]>22*60, Assignment.SIM_COL_PAX_ALIGHT_TIME] = pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME] - numpy.timedelta64(24, 'h')
-        pathset_links_df.loc[pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN]>22*60, Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = \
-            ((pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME]-pathset_links_df[Passenger.PF_COL_PAX_B_TIME])/numpy.timedelta64(1, 'm'))
+        pathset_links_df = Assignment.set_alight_delay(pathset_links_df)
 
         max_alight_delay_min = pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN].max()
         FastTripsLogger.debug("Biggest alight_delay = %f" % max_alight_delay_min)
@@ -1471,6 +1465,31 @@ class Assignment:
         FastTripsLogger.debug("flag_missed_transfers() pathset_paths_df (%d):\n%s" % (len(pathset_paths_df), pathset_paths_df.head(30).to_string()))
 
         return (pathset_paths_df, pathset_links_df)
+
+    @staticmethod
+    def set_alight_delay(pathset_links_df):
+        # Set alight delay (min)
+        FastTripsLogger.debug("flag_missed_transfers() pathset_links_df (%d):\n%s" % (
+        len(pathset_links_df), pathset_links_df.head().to_string()))
+        pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = 0.0
+        pathset_links_df.loc[
+            pandas.notnull(pathset_links_df[Trip.TRIPS_COLUMN_TRIP_ID]), Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = \
+            ((pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME] - pathset_links_df[
+                Passenger.PF_COL_PAX_B_TIME]) / numpy.timedelta64(1, 'm'))
+
+        #: todo: is there a more elegant way to take care of this?  some trips have times after midnight so they're the next day
+        pathset_links_df.loc[
+            pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] > 22 * 60, Assignment.SIM_COL_PAX_BOARD_TIME] = \
+        pathset_links_df[Assignment.SIM_COL_PAX_BOARD_TIME] - numpy.timedelta64(24, 'h')
+        pathset_links_df.loc[
+            pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] > 22 * 60, Assignment.SIM_COL_PAX_ALIGHT_TIME] = \
+        pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME] - numpy.timedelta64(24, 'h')
+        pathset_links_df.loc[
+            pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] > 22 * 60, Assignment.SIM_COL_PAX_ALIGHT_DELAY_MIN] = \
+                ((pathset_links_df[Assignment.SIM_COL_PAX_ALIGHT_TIME] - pathset_links_df[
+                Passenger.PF_COL_PAX_B_TIME]) / numpy.timedelta64(1, 'm'))
+
+        return pathset_links_df
 
     @staticmethod
     def load_passengers_on_vehicles_with_cap(FT, iteration, pathfinding_iteration, simulation_iteration,
