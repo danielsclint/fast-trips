@@ -1,0 +1,7 @@
+person_id,person_trip_id,o_taz,d_taz,mode,purpose,departure_time,arrival_time,time_target,vot,PNR_ids
+bart,1,1302,3148,walk-rapid_bus-walk,personal_business,7:30:00,7:30:00,departure,10.01,
+ben,1,1623,3007,walk-rapid_bus-walk,other,8:20:00,8:20:00,departure,25.5,
+frogger,1,1658,3230,walk-rapid_bus-walk,other,8:40:00,8:40:00,departure,25.5,
+lisaz,1,1388,3230,walk-rapid_bus-walk,personal_business,6:15:00,6:15:00,departure,10.01,
+marge,1,1686,3022,walk-rapid_bus-walk,personal_business,7:00:00,7:00:00,departure,10.01,
+paperboy,1,880,3022,walk-rapid_bus-walk,other,8:30:00,8:30:00,departure,25.5,

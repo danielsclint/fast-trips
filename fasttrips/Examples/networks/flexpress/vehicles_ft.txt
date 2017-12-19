@@ -1,0 +1,2 @@
+vehicle_name,seated_capacity,standing_capacity,max_speed
+FLXPbus,30,0,155
