@@ -433,30 +433,205 @@ class Util:
         from .Transfer import Transfer
         from .Trip import Trip
 
-        config = ptg.config.default_config()
-        config.add_nodes_from([
+        g = ptg.config.empty_config()
+        ptg.config.add_edge_config(g)
+
+        g.add_nodes_from([
+            ('agency.txt', {
+                'required_columns': (
+                    'agency_name',
+                    'agency_url',
+                    'agency_timezone',
+                ),
+            }),
+            ('calendar.txt', {
+                'converters': {
+                    'start_date': ptg.parsers.vparse_date,
+                    'end_date': ptg.parsers.vparse_date,
+                    'monday': vparse_bool,
+                    'tuesday': vparse_bool,
+                    'wednesday': vparse_bool,
+                    'thursday': vparse_bool,
+                    'friday': vparse_bool,
+                    'saturday': vparse_bool,
+                    'sunday': vparse_bool,
+                },
+                'required_columns': (
+                    'service_id',
+                    'monday',
+                    'tuesday',
+                    'wednesday',
+                    'thursday',
+                    'friday',
+                    'saturday',
+                    'sunday',
+                    'start_date',
+                    'end_date',
+                ),
+            }),
+            ('calendar_dates.txt', {
+                'converters': {
+                    'date': ptg.parsers.vparse_date,
+                    'exception_type': np.int8,
+                },
+                'required_columns': (
+                    'service_id',
+                    'date',
+                    'exception_type',
+                ),
+            }),
+            ('fare_attributes.txt', {
+                'converters': {
+                    'price': np.float32,
+                    'payment_method': np.int8,
+                    'transfer_duration': np.int64,
+                },
+                'required_columns': (
+                    'fare_id',
+                    'price',
+                    'currency_type',
+                    'payment_method',
+                    'transfers',
+                ),
+            }),
+            ('fare_rules.txt', {
+                'required_columns': (
+                    'fare_id',
+                ),
+            }),
+            ('feed_info.txt', {
+                'converters': {
+                    'feed_start_date': ptg.parsers.vparse_date,
+                    'feed_end_date': ptg.parsers.vparse_date,
+                },
+                'required_columns': (
+                    'feed_publisher_name',
+                    'feed_publisher_url',
+                    'feed_lang',
+                ),
+            }),
+            ('frequencies.txt', {
+                'converters': {
+                    'headway_secs': np.int16,
+                    'exact_times': np.int64,
+                    'start_time': ptg.parsers.vparse_time,
+                    'end_time': ptg.parsers.vparse_time,
+                },
+                'required_columns': (
+                    'trip_id',
+                    'start_time',
+                    'end_time',
+                    'headway_secs',
+                ),
+            }),
+            ('routes.txt', {
+                'converters': {
+                    'route_type': np.int8,
+                },
+                'required_columns': (
+                    'route_id',
+                    'route_short_name',
+                    'route_long_name',
+                    'route_type',
+                ),
+            }),
+            ('shapes.txt', {
+                'converters': {
+                    'shape_pt_lat': np.float32,
+                    'shape_pt_lon': np.float32,
+                    'shape_pt_sequence': np.int16,
+                    'shape_dist_traveled': np.float32,
+                },
+                'required_columns': (
+                    'shape_id',
+                    'shape_pt_lat',
+                    'shape_pt_lon',
+                    'shape_pt_sequence',
+                ),
+            }),
+            ('stops.txt', {
+                'converters': {
+                    'stop_lat': np.float32,
+                    'stop_lon': np.float32,
+                    'location_type': np.int8,
+                    'wheelchair_boarding': np.int8,
+                    'pickup_type': np.int8,
+                    'drop_off_type': np.int8,
+                    'shape_dist_traveled': np.float32,
+                    'timepoint': np.int8,
+                },
+                'required_columns': (
+                    'stop_id',
+                    'stop_name',
+                    'stop_lat',
+                    'stop_lon',
+                ),
+            }),
+            ('stop_times.txt', {
+                'converters': {
+                    'arrival_time': ptg.parsers.vparse_time,
+                    'departure_time': ptg.parsers.vparse_time,
+                    'pickup_type': np.int8,
+                    'shape_dist_traveled': np.float32,
+                    'stop_sequence': np.int16,
+                    'timepoint': np.int8,
+                },
+                'required_columns': (
+                    'trip_id',
+                    'arrival_time',
+                    'departure_time',
+                    'stop_id',
+                    'stop_sequence',
+                ),
+            }),
+            ('transfers.txt', {
+                'converters': {
+                    'transfer_type': np.int8,
+                    'min_transfer_time': np.int64,
+                },
+                'required_columns': (
+                    'from_stop_id',
+                    'to_stop_id',
+                    'transfer_type',
+                ),
+            }),
+            ('trips.txt', {
+                'converters': {
+                    'direction_id': np.int8,
+                    'wheelchair_accessible': np.int8,
+                    'bikes_allowed': np.int8,
+                },
+                'required_columns': (
+                    'route_id',
+                    'service_id',
+                    'trip_id',
+                ),
+            }),
+        ])
+
+        g.add_nodes_from([
             (TAZ.INPUT_DRIVE_ACCESS_FILE, {
                 'converters': {
-                    TAZ.DRIVE_ACCESS_COLUMN_COST: ptg.parsers.vparse_numeric,
-                    TAZ.DRIVE_ACCESS_COLUMN_TRAVEL_TIME: ptg.parsers.vparse_numeric,
-                    TAZ.DRIVE_ACCESS_COLUMN_DISTANCE: ptg.parsers.vparse_numeric,
+                    TAZ.DRIVE_ACCESS_COLUMN_COST: np.float32,
+                    TAZ.DRIVE_ACCESS_COLUMN_TRAVEL_TIME: np.float32,
+                    TAZ.DRIVE_ACCESS_COLUMN_DISTANCE: np.float32,
                     TAZ.DRIVE_ACCESS_COLUMN_START_TIME: np.vectorize(Util.read_time),
                     TAZ.DRIVE_ACCESS_COLUMN_END_TIME: np.vectorize(Util.read_end_time)
                 }
             }),
             (TAZ.INPUT_DAP_FILE, {
                 'converters': {
-                    TAZ.DAP_COLUMN_LOT_LATITUDE: ptg.parsers.vparse_numeric,
-                    TAZ.DAP_COLUMN_LOT_LONGITUDE: ptg.parsers.vparse_numeric,
-                    TAZ.DAP_COLUMN_CAPACITY: ptg.parsers.vparse_numeric
+                    TAZ.DAP_COLUMN_LOT_LATITUDE: np.float32,
+                    TAZ.DAP_COLUMN_LOT_LONGITUDE: np.float32,
+                    TAZ.DAP_COLUMN_CAPACITY: np.int16
                 }
             }),
             (Route.INPUT_FARE_ATTRIBUTES_FILE, {
                 'converters': {
-                    Route.FARE_ATTR_COLUMN_PAYMENT_METHOD: ptg.parsers.vparse_numeric,
-                    Route.FARE_ATTR_COLUMN_PRICE: ptg.parsers.vparse_numeric,
-                    Route.FARE_ATTR_COLUMN_TRANSFERS: ptg.parsers.vparse_numeric,
-                    Route.FARE_ATTR_COLUMN_TRANSFER_DURATION: ptg.parsers.vparse_numeric
+                    Route.FARE_ATTR_COLUMN_PAYMENT_METHOD: np.int8,
+                    Route.FARE_ATTR_COLUMN_PRICE: np.float32,
+                    Route.FARE_ATTR_COLUMN_TRANSFERS: np.int8,
+                    Route.FARE_ATTR_COLUMN_TRANSFER_DURATION: np.int64
                 }
             }),
             (Route.INPUT_FARE_PERIODS_FILE, {
@@ -467,7 +642,7 @@ class Util:
             }),
             (Route.INPUT_FARE_TRANSFER_RULES_FILE, {
                 'converters': {
-                    Route.FARE_TRANSFER_RULES_COLUMN_AMOUNT: ptg.parsers.vparse_numeric
+                    Route.FARE_TRANSFER_RULES_COLUMN_AMOUNT: np.float32
                 }
             }),
             (Route.INPUT_ROUTES_FILE, {
@@ -478,8 +653,8 @@ class Util:
             (Stop.INPUT_STOPS_FILE, {}),
             (Transfer.INPUT_TRANSFERS_FILE, {
                 'converters': {
-                    Transfer.TRANSFERS_COLUMN_DISTANCE: ptg.parsers.vparse_numeric,
-                    Transfer.TRANSFERS_COLUMN_ELEVATION_GAIN: ptg.parsers.vparse_numeric,
+                    Transfer.TRANSFERS_COLUMN_DISTANCE: np.float32,
+                    Transfer.TRANSFERS_COLUMN_ELEVATION_GAIN: np.float32,
                 }
             }),
             (Trip.INPUT_TRIPS_FILE, {
@@ -487,18 +662,25 @@ class Util:
             }),
             (Trip.INPUT_VEHICLES_FILE, {
                 'converters': {
-                    Trip.VEHICLES_COLUMN_ACCELERATION: ptg.parsers.vparse_numeric,
-                    Trip.VEHICLES_COLUMN_DECELERATION: ptg.parsers.vparse_numeric,
-                    Trip.VEHICLES_COLUMN_MAXIMUM_SPEED: ptg.parsers.vparse_numeric,
-                    Trip.VEHICLES_COLUMN_SEATED_CAPACITY: ptg.parsers.vparse_numeric,
-                    Trip.VEHICLES_COLUMN_STANDING_CAPACITY: ptg.parsers.vparse_numeric,
+                    Trip.VEHICLES_COLUMN_ACCELERATION: np.float32,
+                    Trip.VEHICLES_COLUMN_DECELERATION: np.float32,
+                    Trip.VEHICLES_COLUMN_MAXIMUM_SPEED: np.float32,
+                    Trip.VEHICLES_COLUMN_SEATED_CAPACITY: np.int16,
+                    Trip.VEHICLES_COLUMN_STANDING_CAPACITY: np.int16,
                 }
             }),
             (TAZ.INPUT_WALK_ACCESS_FILE, {
                 'converters': {
-                    TAZ.WALK_ACCESS_COLUMN_DIST: ptg.parsers.vparse_numeric
+                    TAZ.WALK_ACCESS_COLUMN_DIST: np.float32
                 }
             })
         ])
 
-        return config
+        return g
+
+    @staticmethod
+    def parse_bool(val):
+        return bool(val)
+
+
+vparse_bool = np.vectorize(Util.parse_bool)

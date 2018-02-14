@@ -82,8 +82,8 @@ class Stop:
 
         self.stops_df = gtfs.stops
 
-        FastTripsLogger.info("Read %7d %15s from %25d %25s" %
-                             (len(self.stops_df), 'date valid stop', len(gtfs.stops), 'total stops'))
+        FastTripsLogger.info("Read %7d %15s" %
+                             (len(self.stops_df), 'date valid stops'))
 
         # Read the fast-trips supplemental stops data file. Make sure stop ID is read as a string.
         stops_ft_df = gtfs.get(Stop.INPUT_STOPS_FILE)

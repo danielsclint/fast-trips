@@ -760,6 +760,11 @@ class Passenger:
             PathSet.PATH_KEY_INIT_COST,
             PathSet.PATH_KEY_INIT_FARE])
 
+        pathset_paths_df[Passenger.TRIP_LIST_COLUMN_TRIP_LIST_ID_NUM] = pathset_paths_df[Passenger.TRIP_LIST_COLUMN_TRIP_LIST_ID_NUM].astype(np.int32)
+        pathset_paths_df[Passenger.TRIP_LIST_COLUMN_TRACE] = pathset_paths_df[Passenger.TRIP_LIST_COLUMN_TRACE].astype(np.bool)
+        pathset_paths_df[['pathdir', Passenger.PF_COL_PATH_NUM]] = pathset_paths_df[['pathdir', Passenger.PF_COL_PATH_NUM]].astype(np.int8)
+        pathset_paths_df[[Passenger.PF_COL_PF_ITERATION, PathSet.PATH_KEY_COST, PathSet.PATH_KEY_FARE, PathSet.PATH_KEY_INIT_COST, PathSet.PATH_KEY_INIT_FARE]] = pathset_paths_df[[Passenger.PF_COL_PF_ITERATION, PathSet.PATH_KEY_COST, PathSet.PATH_KEY_FARE, PathSet.PATH_KEY_INIT_COST, PathSet.PATH_KEY_INIT_FARE]].astype(np.float32)
+
         pathset_links_df = pd.DataFrame(linklist, columns=[\
             Passenger.TRIP_LIST_COLUMN_PERSON_ID,
             Passenger.TRIP_LIST_COLUMN_PERSON_TRIP_ID,
@@ -780,6 +785,25 @@ class Passenger:
             Passenger.PF_COL_LINK_DIST,
             Passenger.PF_COL_WAIT_TIME,
             Passenger.PF_COL_LINK_NUM ])
+
+        pathset_links_df[[Passenger.TRIP_LIST_COLUMN_TRIP_LIST_ID_NUM, 'A_id_num', 'B_id_num']] = pathset_links_df[[Passenger.TRIP_LIST_COLUMN_TRIP_LIST_ID_NUM, 'A_id_num', 'B_id_num']].astype(np.int32)
+        pathset_links_df[
+            [Passenger.PF_COL_PF_ITERATION,
+             Passenger.PF_COL_LINK_FARE,
+             Passenger.PF_COL_LINK_COST,
+             Passenger.PF_COL_LINK_DIST,
+             Route.ROUTES_COLUMN_MODE_NUM,
+             Trip.TRIPS_COLUMN_TRIP_ID_NUM]
+        ] = pathset_links_df[
+            [Passenger.PF_COL_PF_ITERATION,
+             Passenger.PF_COL_LINK_FARE,
+             Passenger.PF_COL_LINK_COST,
+             Passenger.PF_COL_LINK_DIST,
+             Route.ROUTES_COLUMN_MODE_NUM,
+             Trip.TRIPS_COLUMN_TRIP_ID_NUM]
+        ].astype(np.float32)
+        pathset_links_df[Passenger.PF_COL_PATH_NUM] = pathset_links_df[Passenger.PF_COL_PATH_NUM].astype(np.int8)
+        pathset_links_df[[Passenger.PF_COL_LINK_NUM, 'A_seq', 'B_seq']] = pathset_links_df[[Passenger.PF_COL_LINK_NUM, 'A_seq', 'B_seq']].astype(np.int16)
 
         FastTripsLogger.debug("setup_passenger_pathsets(): pathset_paths_df(%d) and pathset_links_df(%d) dataframes constructed" % (len(pathset_paths_df), len(pathset_links_df)))
 

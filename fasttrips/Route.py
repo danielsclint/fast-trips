@@ -214,13 +214,6 @@ class Route(object):
         FastTripsLogger.info("Read %7d %15s from %25s, %25s" %
                              (len(self.routes_df), "routes", "routes.txt", Route.INPUT_ROUTES_FILE))
 
-        self.agencies_df = gtfs.agency
-
-        FastTripsLogger.debug("=========== AGENCIES ===========\n" + str(self.agencies_df.head()))
-        FastTripsLogger.debug("\n"+str(self.agencies_df.dtypes))
-        FastTripsLogger.info("Read %7d %15s from %25s" %
-                             (len(self.agencies_df), "agencies", "agency.txt"))
-
         self.fare_attrs_df = gtfs.fare_attributes
 
         FastTripsLogger.debug("=========== FARE ATTRIBUTES ===========\n" + str(self.fare_attrs_df.head()))
