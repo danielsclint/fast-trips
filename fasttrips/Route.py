@@ -106,6 +106,15 @@ class Route(object):
     FARE_RULES_COLUMN_DESTINATION_ID        = "destination_id"
     #: GTFS fare rules column name: Contains ID
     FARE_RULES_COLUMN_CONTAINS_ID           = "contains_id"
+    #: GTFS Fare Rules Columns: Required + Optional
+    FARE_RULES_ALL_COLUMNS                  = [
+        FARE_RULES_COLUMN_FARE_ID,
+        FARE_RULES_COLUMN_ROUTE_ID,
+        FARE_RULES_COLUMN_ORIGIN_ID,
+        FARE_RULES_COLUMN_DESTINATION_ID,
+        FARE_RULES_COLUMN_CONTAINS_ID
+    ]
+
     #: fasttrips Fare rules column name: Fare class
     FARE_RULES_COLUMN_FARE_PERIOD           = FARE_ATTR_COLUMN_FARE_PERIOD
     #: fasttrips Fare rules column name: Start time for the fare. A DateTime
@@ -254,7 +263,8 @@ class Route(object):
 
 
         # Fare rules (map routes to fare_id)
-        self.fare_rules_df = gtfs.fare_rules
+        # Force all required and optional columns onto the dataframe for use later
+        self.fare_rules_df = gtfs.fare_rules.reindex(columns=Route.FARE_RULES_ALL_COLUMNS)
 
         if len(self.fare_rules_df) > 0:
             self.fare_ids_df = Util.add_numeric_column(self.fare_rules_df[[Route.FARE_RULES_COLUMN_FARE_ID]],
