@@ -236,31 +236,27 @@ class Route(object):
             self.fare_attrs_df = gtfs.fare_attributes
             self.fare_by_class = False
         else:
-            # verify required columns are present
-            fare_attrs_cols = list(self.fare_attrs_df.columns.values)
-            assert(Route.FARE_ATTR_COLUMN_FARE_PERIOD       in fare_attrs_cols)
-            assert(Route.FARE_ATTR_COLUMN_PRICE             in fare_attrs_cols)
-            assert(Route.FARE_ATTR_COLUMN_CURRENCY_TYPE     in fare_attrs_cols)
-            assert(Route.FARE_ATTR_COLUMN_PAYMENT_METHOD    in fare_attrs_cols)
-            assert(Route.FARE_ATTR_COLUMN_TRANSFERS         in fare_attrs_cols)
-
-            if Route.FARE_ATTR_COLUMN_TRANSFER_DURATION not in fare_attrs_cols:
-                self.fare_attrs_df[Route.FARE_ATTR_COLUMN_TRANSFER_DURATION] = np.nan
-
-            FastTripsLogger.debug("===> REPLACED BY FARE ATTRIBUTES FT\n" + str(self.fare_attrs_df.head()))
-            FastTripsLogger.debug("\n"+str(self.fare_attrs_df.dtypes))
-            FastTripsLogger.info("Read %7d %15s from %25s" %
-                                 (len(self.fare_attrs_df), "fare attributes", Route.INPUT_FARE_ATTRIBUTES_FILE))
-
             #: fares are by fare_period rather than by fare_id
+            assert (Route.FARE_ATTR_COLUMN_FARE_PERIOD in self.fare_attrs_df)
             self.fare_by_class = True
 
+        # verify required columns are present
+        fare_attrs_cols = list(self.fare_attrs_df.columns.values)
+
+        assert(Route.FARE_ATTR_COLUMN_PRICE             in fare_attrs_cols)
+        assert(Route.FARE_ATTR_COLUMN_CURRENCY_TYPE     in fare_attrs_cols)
+        assert(Route.FARE_ATTR_COLUMN_PAYMENT_METHOD    in fare_attrs_cols)
+        assert(Route.FARE_ATTR_COLUMN_TRANSFERS         in fare_attrs_cols)
+
+        if Route.FARE_ATTR_COLUMN_TRANSFER_DURATION not in fare_attrs_cols:
+            self.fare_attrs_df[Route.FARE_ATTR_COLUMN_TRANSFER_DURATION] = np.nan
+
+        FastTripsLogger.info("Read %7d %15s from %25s" % (len(self.fare_attrs_df), "fare attributes",
+                                                          Route.INPUT_FARE_ATTRIBUTES_FILE if
+                                                          self.fare_by_class else
+                                                          "fare_attributes.txt"))
         FastTripsLogger.debug("=========== FARE ATTRIBUTES ===========\n" + str(self.fare_attrs_df.head()))
         FastTripsLogger.debug("\n"+str(self.fare_attrs_df.dtypes))
-        FastTripsLogger.info("Read %7d %15s from %25s" %
-                             (len(self.fare_attrs_df), "fare attributes",
-                              Route.INPUT_FARE_ATTRIBUTES_FILE if self.fare_by_class else "fare_attributes.txt"))
-
 
         # Fare rules (map routes to fare_id)
         # Force all required and optional columns onto the dataframe for use later
