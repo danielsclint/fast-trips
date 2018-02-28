@@ -221,16 +221,12 @@ class Route(object):
         FastTripsLogger.info("Read %7d %15s from %25s" %
                              (len(self.agencies_df), "agencies", "agency.txt"))
 
-        self.fare_attrs_df = gtfs.fare_attributes
-
-        FastTripsLogger.debug("=========== FARE ATTRIBUTES ===========\n" + str(self.fare_attrs_df.head()))
-        FastTripsLogger.debug("\n"+str(self.fare_attrs_df.dtypes))
-        FastTripsLogger.info("Read %7d %15s from %25s" %
-                             (len(self.fare_attrs_df), "fare attributes", "fare_attributes.txt"))
-
         # subsitute fasttrips fare attributes
         self.fare_attrs_df = gtfs.get(Route.INPUT_FARE_ATTRIBUTES_FILE)
-        if not self.fare_attrs_df.empty:
+        if self.fare_attrs_df.empty:
+            self.fare_attrs_df = gtfs.fare_attributes
+            self.fare_by_class = False
+        else:
             # verify required columns are present
             fare_attrs_cols = list(self.fare_attrs_df.columns.values)
             assert(Route.FARE_ATTR_COLUMN_FARE_PERIOD       in fare_attrs_cols)
@@ -249,8 +245,13 @@ class Route(object):
 
             #: fares are by fare_period rather than by fare_id
             self.fare_by_class = True
-        else:
-            self.fare_by_class = False
+
+        FastTripsLogger.debug("=========== FARE ATTRIBUTES ===========\n" + str(self.fare_attrs_df.head()))
+        FastTripsLogger.debug("\n"+str(self.fare_attrs_df.dtypes))
+        FastTripsLogger.info("Read %7d %15s from %25s" %
+                             (len(self.fare_attrs_df), "fare attributes",
+                              Route.INPUT_FARE_ATTRIBUTES_FILE if self.fare_by_class else "fare_attributes.txt"))
+
 
         # Fare rules (map routes to fare_id)
         self.fare_rules_df = gtfs.fare_rules
