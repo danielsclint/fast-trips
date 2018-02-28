@@ -622,19 +622,28 @@ class Route(object):
             # transfer_duration fillna with -1
             fare_rules_df.fillna({Route.FARE_ATTR_COLUMN_TRANSFER_DURATION:-1}, inplace=True)
 
+            # pandas >0.21 throws future warning if export columns are not all available
+            export_columns = [
+                Route.FARE_RULES_COLUMN_FARE_ID_NUM,
+                Route.FARE_RULES_COLUMN_FARE_ID,
+                Route.FARE_ATTR_COLUMN_FARE_PERIOD,
+                Route.FARE_RULES_COLUMN_ROUTE_ID_NUM,
+                Route.FARE_RULES_COLUMN_ORIGIN_ID_NUM,
+                Route.FARE_RULES_COLUMN_DESTINATION_ID_NUM,
+                Route.FARE_RULES_COLUMN_START_TIME,
+                Route.FARE_RULES_COLUMN_END_TIME,
+                Route.FARE_ATTR_COLUMN_PRICE,
+                Route.FARE_ATTR_COLUMN_TRANSFERS,
+                Route.FARE_ATTR_COLUMN_TRANSFER_DURATION
+            ]
+
+            # pandas >0.21 throws future warning if export columns are not all available
+            # filter down to only the available export columns in the dataframe
+            export_columns = set(fare_rules_df.columns).intersection(export_columns)
+
             # File with fare id num, fare id, fare class, price, xfers
             fare_rules_df.to_csv(os.path.join(self.output_dir, Route.OUTPUT_FARE_ID_FILE),
-                                columns=[Route.FARE_RULES_COLUMN_FARE_ID_NUM,
-                                         Route.FARE_RULES_COLUMN_FARE_ID,
-                                         Route.FARE_ATTR_COLUMN_FARE_PERIOD,
-                                         Route.FARE_RULES_COLUMN_ROUTE_ID_NUM,
-                                         Route.FARE_RULES_COLUMN_ORIGIN_ID_NUM,
-                                         Route.FARE_RULES_COLUMN_DESTINATION_ID_NUM,
-                                         Route.FARE_RULES_COLUMN_START_TIME,
-                                         Route.FARE_RULES_COLUMN_END_TIME,
-                                         Route.FARE_ATTR_COLUMN_PRICE,
-                                         Route.FARE_ATTR_COLUMN_TRANSFERS,
-                                         Route.FARE_ATTR_COLUMN_TRANSFER_DURATION],
+                                columns=export_columns,
                                 sep=" ", index=False)
             FastTripsLogger.debug("Wrote %s" % os.path.join(self.output_dir, Route.OUTPUT_FARE_ID_FILE))
 
