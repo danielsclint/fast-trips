@@ -651,6 +651,7 @@ class TAZ:
                        TAZ.DAP_COLUMN_LOT_LATITUDE,               # probably not useful
                        TAZ.DAP_COLUMN_LOT_LONGITUDE,              # probably not useful
                        TAZ.DRIVE_ACCESS_COLUMN_LOT_ID,            # probably not useful
+                       TAZ.DAP_COLUMN_NAME                        # The values are eventually cast floats, so this one needs to be removed
                       ]
         valid_drop_fields = []
         for field in drop_fields:
@@ -675,7 +676,7 @@ class TAZ:
 
         access_df.reset_index(inplace=True)
         # rename from these default column names
-        access_df.rename(columns={"level_3":"attr_name", 0:"attr_value"}, inplace=True)
+        access_df.rename(columns={"level_5":"attr_name", 0:"attr_value"}, inplace=True)
         # make attr_value a float instead of an object
         access_df["attr_value"] = access_df["attr_value"].astype(float)
 
