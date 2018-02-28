@@ -87,15 +87,15 @@ class Stop:
 
         # Read the fast-trips supplemental stops data file. Make sure stop ID is read as a string.
         stops_ft_df = gtfs.get(Stop.INPUT_STOPS_FILE)
-        assert(len(stops_ft_df) > 0)
 
-        # verify required columns are present
-        stops_ft_cols = list(stops_ft_df.columns.values)
-        assert(Stop.STOPS_COLUMN_STOP_ID             in stops_ft_cols)
+        if not stops_ft_df.empty:
+            # verify required columns are present
+            stops_ft_cols = list(stops_ft_df.columns.values)
+            assert(Stop.STOPS_COLUMN_STOP_ID in stops_ft_cols)
 
-        # if more than one column, join to the stops dataframe
-        if len(stops_ft_cols) > 1:
-            self.stops_df = pd.merge(left=self.stops_df, right=stops_ft_df,
+            # if more than one column, join to the stops dataframe
+            if len(stops_ft_cols) > 1:
+                self.stops_df = pd.merge(left=self.stops_df, right=stops_ft_df,
                                          how='left', on=Stop.STOPS_COLUMN_STOP_ID)
 
         # Stop IDs are strings. Create a unique numeric stop ID.
