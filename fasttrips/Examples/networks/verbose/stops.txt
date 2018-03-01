@@ -1,0 +1,23 @@
+stop_id,stop_name,stop_lat,stop_lon,zone_id,stop_code,stop_desc,location_type,parent_station,stop_timezone,wheelchair_boarding
+PHX1,SkyHarborAirport,33.433358,-112.012119,1388,EMB,STOP: SkyHarborAirport,0,,America/Phoenix,1
+PHX2,DowntownPHX,33.449377,-112.071722,1302,EMB,STOP: DowntownPHX,1,,America/Phoenix,2
+PHX4,GlendaleStadium,33.53006,-112.2587,880,EMB,STOP: GlendaleStadium,2,,America/Phoenix,2
+PHX5,PhxMesaAirport,33.29918,-111.65369,2365,EMB,STOP: PhxMesaAirport,3,,America/Phoenix,1
+PHX7,19th_BethanyRd,33.52049,-112.10405,2245,EMB,STOP: 19th_BethanyRd,4,,America/Phoenix,0
+PHX10,ASU_Tempe,33.42571,-111.93604,1623,EMB,STOP: ASU_Tempe,5,,America/Phoenix,0
+PHX17,Avondale,33.4428,-112.2973,732,EMB,STOP: Avondale,6,,America/Phoenix,1
+PHX18,24th_Baseline,33.3856,-112.0381,1440,EMB,STOP: 24th_Baseline,7,,America/Phoenix,1
+PHX19,ChandlerCityLot,33.2991,-111.8497,1700,EMB,STOP: ChandlerCityLot,8,,America/Phoenix,1
+PHX20,ChandlerFashionCenter,33.298332,-111.901618,1686,EMB,STOP: ChandlerFashionCenter,9,,America/Phoenix,1
+PHX21,EdPastorTC,33.4138,-112.0772,1395,EMB,STOP: EdPastorTC,10,,America/Phoenix,1
+PHX23,SkySongTC,33.46204,-111.93002,1588,EMB,STOP: SkySongTC,11,,America/Phoenix,0
+PHX24,DesertSkyTC,33.46708,-112.22909,1180,EMB,STOP: DesertSkyTC,12,,America/Phoenix,0
+PHX26,SuperstitionSpringsTC,33.3905,-111.6914,1919,EMB,STOP: SuperstitionSpringsTC,13,,America/Phoenix,1
+PHX27,IKEA_Tempe,33.34176,-111.96705,1658,EMB,STOP: IKEA_Tempe,14,,America/Phoenix,0
+PHX28,PhxPremiumOutlets,33.2768,-111.9814,1468,EMB,STOP: PhxPremiumOutlets,15,,America/Phoenix,1
+TUS9,OroValley,32.4445,-110.9373,3230,EMB,STOP: OroValley,16,,America/Phoenix,1
+TUS11,Ina,32.3411,-111.0556,3022,EMB,STOP: Ina,17,,America/Phoenix,2
+TUS12,Marana,32.3486,-111.082,3074,EMB,STOP: Marana,18,,America/Phoenix,0
+TUS13,CasinoDelSol,32.12579,-111.07606,3007,EMB,STOP: CasinoDelSol,19,,America/Phoenix,0
+TUS18,SahauritaTownHall,31.95184,-110.97464,3273,EMB,STOP: SahauritaTownHall,20,,America/Phoenix,0
+TUS20,DesertMuseum,32.2602,-111.169,3148,EMB,STOP: DesertMuseum,21,,America/Phoenix,1

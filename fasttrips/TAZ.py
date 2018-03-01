@@ -651,7 +651,8 @@ class TAZ:
                        TAZ.DAP_COLUMN_LOT_LATITUDE,               # probably not useful
                        TAZ.DAP_COLUMN_LOT_LONGITUDE,              # probably not useful
                        TAZ.DRIVE_ACCESS_COLUMN_LOT_ID,            # probably not useful
-                       TAZ.DAP_COLUMN_NAME                        # The values are eventually cast floats, so this one needs to be removed
+                       TAZ.DAP_COLUMN_NAME,                       # The values are eventually cast floats, so this one needs to be removed
+                       TAZ.DAP_COLUMN_TYPE,                       # This is not used anywhere
                       ]
         valid_drop_fields = []
         for field in drop_fields:

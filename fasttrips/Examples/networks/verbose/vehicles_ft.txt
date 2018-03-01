@@ -1,0 +1,2 @@
+vehicle_name,seated_capacity,standing_capacity,max_speed,vehicle_description,number_of_doors,vehicle_length,platform_height,propulsion_type,wheelchair_capacity,bicycle_capacity,boarding_door,fare_payment_method,user_defined_payment,boarding_height,door_time
+FLXPbus,30,0,155,Flex Bus,2,35,12.5,CNG,4,2,all,magstip_card,,level,4
