@@ -1,0 +1,10 @@
+[fasttrips]
+number_of_processes           = 1
+network_build_date            = 3/1/2018
+trace_ids                     = [('P1','1'),('P5','1'),('P6','1')]
+bump_one_at_a_time            = True
+simulation                    = True
+
+[pathfinding]
+time_window                   = 30
+user_class_function           = generic_user_class
