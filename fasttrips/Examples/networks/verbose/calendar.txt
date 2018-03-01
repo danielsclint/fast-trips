@@ -1,0 +1,2 @@
+service_id,start_date,end_date,monday,tuesday,wednesday,thursday,friday,saturday,sunday
+FLXP,20180101,20181231,1,1,1,1,1,1,1
