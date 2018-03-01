@@ -401,12 +401,16 @@ class TAZ:
             # TODO: assuming min_transfer_type and transfer_type from GTFS aren't relevant here, since
             # the time and dist are what matter.
             # Assuming schedule_precedence doesn't make sense in the drive access/egress context
-            self.drive_access_df.drop([Transfer.TRANSFERS_COLUMN_FROM_STOP,
-                                       Transfer.TRANSFERS_COLUMN_TO_STOP,
-                                       Transfer.TRANSFERS_COLUMN_TRANSFER_TYPE,
-                                       Transfer.TRANSFERS_COLUMN_MIN_TRANSFER_TIME,
-                                       Transfer.TRANSFERS_COLUMN_SCHEDULE_PRECEDENCE,
-                                       Transfer.TRANSFERS_COLUMN_PENALTY], axis=1, inplace=True)
+            # Some of these are optional, so the list needs to be paired down to what is available.
+            del_cols = [
+                Transfer.TRANSFERS_COLUMN_FROM_STOP,
+                Transfer.TRANSFERS_COLUMN_TO_STOP,
+                Transfer.TRANSFERS_COLUMN_TRANSFER_TYPE,
+                Transfer.TRANSFERS_COLUMN_MIN_TRANSFER_TIME,
+                Transfer.TRANSFERS_COLUMN_SCHEDULE_PRECEDENCE,
+                Transfer.TRANSFERS_COLUMN_PENALTY]
+            del_cols = set(self.drive_access_df).intersection(del_cols)
+            self.drive_access_df.drop(del_cols, axis=1, inplace=True)
             # not relevant for drive access
             if Transfer.TRANSFERS_COLUMN_FROM_ROUTE in list(self.drive_access_df.columns.values):
                 self.drive_access_df.drop([Transfer.TRANSFERS_COLUMN_FROM_ROUTE], axis=1, inplace=True)

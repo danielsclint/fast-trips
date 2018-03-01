@@ -1,0 +1,2 @@
+vehicle_name,seated_capacity,standing_capacity
+FLXPbus,30,0
