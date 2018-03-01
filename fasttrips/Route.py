@@ -234,6 +234,8 @@ class Route(object):
         self.fare_attrs_df = gtfs.get(Route.INPUT_FARE_ATTRIBUTES_FILE)
         if self.fare_attrs_df.empty:
             self.fare_attrs_df = gtfs.fare_attributes
+            if Route.FARE_ATTR_COLUMN_TRANSFERS not in self.fare_attrs_df:
+                self.fare_attrs_df[Route.FARE_ATTR_COLUMN_TRANSFERS] = np.nan
             self.fare_by_class = False
         else:
             #: fares are by fare_period rather than by fare_id
