@@ -455,7 +455,12 @@ class Util:
                 Util.logistic_integration(df['var_value'], df[PathSet.WEIGHTS_COLUMN_WEIGHT_VALUE], df[PathSet.WEIGHTS_GROWTH_LOGISTIC_MAX], df[PathSet.WEIGHTS_GROWTH_LOGISTIC_MID])
 
         # negative cost is invalid
-        df.loc[ df[result_col] < 0, result_col ] = 0.0
+        if (df[result_col] < 0).any():
+            FastTripsLogger.warn("---Pathweight costs has negative values. Setting to zero.---\n{}".format(
+                df[df[result_col] < 0].to_string())
+            )
+            df.loc[ df[result_col] < 0, result_col ] = 0.0
+
 
     @staticmethod
     def exponential_integration(penalty_min, growth_rate):
