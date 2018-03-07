@@ -210,7 +210,7 @@ class Util:
     def read_time(x, end_of_day=False):
         from .Assignment import Assignment
         try:
-            if x=='' or x.lower()=='default':
+            if x=='' or x.lower()=='default' or pd.isnull(x):
                 x = '24:00:00' if end_of_day else '00:00:00'
         except:
             if pd.isnull(x):
