@@ -3,6 +3,8 @@
 *.swp
 *.so
 *.bak
+.cache/*
+*.zip
 
 **/Examples/**/output
 **/Examples/**/output_bak
@@ -11,6 +13,8 @@ create_tableau_path_map/*
 
 # Distribution / packaging
 build/
+dist/
+fasttrips.egg-info/
 
 # test
 sfcta/
@@ -18,3 +22,4 @@ psrc/
 
 #PyCharm IDE Files
 .idea/
+
